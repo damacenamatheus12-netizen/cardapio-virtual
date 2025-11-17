@@ -30,7 +30,6 @@ import type { DeliveryMethod, DeliveryAddress, PaymentMethod } from "@/lib/types
 function SortableCategory({ 
   category, 
   products, 
-  categoryRefs, 
   config, 
   cart, 
   addToCart, 
@@ -192,7 +191,6 @@ export default function Home() {
   const [currentOrder, setCurrentOrder] = useState<any>(null)
   const [deliveryData, setDeliveryData] = useState<{ method: DeliveryMethod; address?: DeliveryAddress } | null>(null)
   
-  const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   // Configurar sensores para drag and drop
@@ -206,31 +204,6 @@ export default function Home() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
-
-  // Configurar Intersection Observer para detectar categoria visível
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id)
-          }
-        })
-      },
-      {
-        rootMargin: "-100px 0px -70% 0px",
-        threshold: 0
-      }
-    )
-
-    Object.values(categoryRefs.current).forEach((ref) => {
-      if (ref) observerRef.current?.observe(ref)
-    })
-
-    return () => {
-      observerRef.current?.disconnect()
-    }
-  }, [categories])
 
   // Filtrar produtos por busca
   const filteredProducts = products.filter(product => {
@@ -260,6 +233,35 @@ export default function Home() {
       products: promoProducts
     })
   }
+
+  // Configurar Intersection Observer para detectar categoria visível
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveCategory(entry.target.id)
+          }
+        })
+      },
+      {
+        rootMargin: "-100px 0px -70% 0px",
+        threshold: 0
+      }
+    )
+
+    // Observar todas as categorias
+    groupedProducts.forEach(({ category }) => {
+      const element = document.getElementById(category.id)
+      if (element) {
+        observerRef.current?.observe(element)
+      }
+    })
+
+    return () => {
+      observerRef.current?.disconnect()
+    }
+  }, [groupedProducts])
 
   // Calcular itens do carrinho
   const cartItems = cart.map(item => ({
@@ -564,7 +566,6 @@ export default function Home() {
                 key={category.id}
                 category={category}
                 products={categoryProducts}
-                categoryRefs={categoryRefs}
                 config={config}
                 cart={cart}
                 addToCart={addToCart}
